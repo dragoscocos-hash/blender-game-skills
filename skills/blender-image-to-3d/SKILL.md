@@ -1,6 +1,6 @@
 ---
 name: blender-image-to-3d
-description: Build a game-ready 3D asset in Blender from reference images (concept art, photos, turnarounds, sketches, screenshots) for any category, including characters, creatures, architecture, vehicles, props, weapons and environment pieces, through gated phases with rendered evidence compared against the reference. Use this whenever a user supplies or mentions a reference image and wants a 3D model or game asset made from it (modelled, blocked out, sculpted, retopologised, textured, rigged, animated or exported for a game engine), even when Blender is not named. Also use for any 3D asset headed to Roblox (in-game MeshParts, UGC accessories, layered clothing, avatar bodies, Creator Store kits), Spawn (spawn.co), CrazyGames, Astrocade, Unity, Unreal, Godot or three.js, including "make a prop for my game", "UGC item", "sell on the Roblox marketplace", "GLB for my CrazyGames game", "model for Spawn", or one asset exported to several platforms. Includes bpy scripts for scene calibration, review renders matched to the reference camera, silhouette measurement, validation, baking, GLB/FBX export with manifests, clean reimport, per-platform limit checks and web compression.
+description: Build a game-ready 3D asset in Blender from reference images or from a description, for characters, creatures, architecture, vehicles, props, weapons and environment pieces, through gated phases measured against the reference. Use whenever the user wants a 3D model, prop, weapon, character or game asset made (modelled, textured, rigged, animated or exported), even when Blender is not named and even with no image yet: the skill writes the reference sheet prompt for the user to generate first. Covers every platform target: Roblox (in-game MeshParts, UGC accessories, layered clothing, avatar bodies, Creator Store kits), Spawn, CrazyGames, Astrocade, Unity, Unreal, Godot, three.js, and one asset exported to several. Triggers include "make a prop for my game", "3D model of", "reference sheet", "turnaround", "UGC item", "sell on the Roblox marketplace", "GLB for my game". Ships bpy scripts for calibration, review renders, silhouette gates, validation, baking, export, reimport, platform checks and web compression.
 license: MIT
 ---
 
@@ -60,9 +60,11 @@ as inferred. Say so when a single image forces inference; do not present a guess
 | `scripts/check_platform.py` | plain Python: checks a GLB against a platform profile (tris per mesh/part, texture size, skin, R15 names, cages, bytes, compression); exit 1 on FAIL |
 | `scripts/optimize_web.sh` | gltf-transform meshopt + WebP/KTX2 + texture resize for web profiles; `--rigged` keeps nodes and materials |
 | `scripts/run_bpy.py` | runs any Blender script above with the `bpy` module when no Blender binary exists |
+| `scripts/sheet_qa.py` | plain Python + Pillow: checks a generated reference sheet (panel count, equal heights, shared ground line, flat background, front/back width) and crops it into `ref/<view>.png` mattes with world_gate numbers; exit 1 on FAIL |
 
 Read `references/categories.md` for the asset's category and `references/platform-targets.md`
-for the target platform before Phase 0. Read
+for the target platform before Phase 0, and `references/reference-sheets.md` whenever there is
+no usable orthographic reference. Read
 `references/rigging-animation.md` before Phase 6 and `references/delivery-and-acceptance.md`
 before Phases 1, 5 and 9. Read `references/blender-5-notes.md` when a script fails on a 5.x API or
 before long renders and bakes.
@@ -95,6 +97,18 @@ listed in the brief; materials pass when each role reads correctly under the mov
 material turntable and in greyscale at gameplay size.
 
 ## Phase 0: read the reference, write the brief
+
+First decide whether the references are good enough to measure. A usable reference is an
+orthographic sheet with at least front and side views at one scale on one ground line (a
+turnaround or model sheet, an exact product drawing). A single concept, a perspective render, a
+photo, a video frame, a sketch or a description in words is not: the build would copy guesses.
+In that case run the reference sheet loop in `references/reference-sheets.md` before anything
+else: write the partial brief, write the sheet prompt with the platform's style lock, hand it to
+the user to generate (the agent never calls an image generator), stop and wait. When the sheet
+comes back, `scripts/sheet_qa.py` checks it and crops the views; on FAIL, hand back a
+regeneration prompt that names the measured defects. Keep any original concept as a detail and
+colour reference next to the sheet. The user can skip the loop by saying so; then record in the
+brief that proportions come from a non-orthographic reference and widen nothing else.
 
 Look at every supplied image before touching Blender. Write `<asset>/asset-brief.md` in this
 exact structure:
@@ -399,3 +413,5 @@ Do not describe the asset as matching the reference where a measurement says oth
 - Original designs only for anything published or sold: borrow a genre, never a franchise's names,
   marks, characters or signature looks.
 - Never spend credits: paid generators are run by the user from prompts the agent writes.
+- No usable orthographic reference, no modelling: write the sheet prompt first and wait for the
+  sheet.
