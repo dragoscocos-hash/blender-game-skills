@@ -26,6 +26,16 @@ as inferred. Say so when a single image forces inference; do not present a guess
   export SKILL=/tmp/bgs/skills/blender-image-to-3d`. The fork adds the platform profiles, the
   platform checker and the web optimizer to the upstream MIT skill by Majid Manzarpour.
 
+- Where to run: the cloud workspace, by default, always. Install the module there
+  (`python3 -m pip install bpy`) and run every script headless through `scripts/run_bpy.py`, even
+  when the session is linked to the user's computer and a Blender MCP or a local Blender app is
+  available. The user chose this: nothing to keep open on their side, no frozen viewport during
+  renders, and every build is reproducible from the scripts. Use the user's local Blender only
+  when they ask for it in this session (to watch the build live or tweak by hand); a linked
+  computer or a connected Blender MCP is not that request. The cloud workspace is temporary, so
+  at the end of every asset session send the user the master and baked `.blend` files, the
+  `build/` scripts, the brief and the exports (and save them to the project or their computer when
+  one is linked); an asset that only lives in the workspace is lost when the session ends.
 - Blender 4.2 or newer (used through 5.2), run headless: `blender --background --python <script> -- <args>`.
   No Blender app (a cloud container): `python3 -m pip install bpy` (5.0.x wheel for Python 3.11)
   and run every script through `python3 scripts/run_bpy.py <script> <args>`; wherever this file
@@ -37,8 +47,8 @@ as inferred. Say so when a single image forces inference; do not present a guess
   Resolve the binary once: `$BLENDER_BIN`, then `blender` on PATH, then
   `/Applications/Blender.app/Contents/MacOS/Blender`. Workbench renders need no GPU on macOS or
   Windows; on a headless Linux box without a GPU, pass `--engine cycles` to review_render.py.
-- A live Blender session through an MCP server (execute-Python tool) is optional and useful for
-  inspection. Even then, build through the numbered scripts and save the same master file, so the
+- A live Blender session through an MCP server (execute-Python tool) is optional, used only when
+  the user asks for local work (see "Where to run"), and useful for inspection. Even then, build through the numbered scripts and save the same master file, so the
   build stays reproducible. In a live session, `exec(open(path).read())` a script and call its
   functions instead of the command line.
 - All modelling is written as bpy code in `<asset>/build/NN_<phase>.py`, copied from
