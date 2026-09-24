@@ -76,3 +76,19 @@ user's viewport disagree.
 - Blender cannot import EXT_meshopt_compression GLBs; validate compressed files with gltf-transform.
 - AO baked from HIGH to LOW where the two meshes coincide exactly comes out black; for props with
   no separate HIGH detail, skip the AO bake or bake AO from the LOW mesh onto itself.
+
+## Lessons from the first sheet-to-model build (PR_CrownMoleKing, 2026-09-24)
+
+- Material colours set from bpy (`Base Color` default_value) are linear. Colours picked from an
+  sRGB reference must be converted (`((c + 0.055) / 1.055) ** 2.4`) or every material renders
+  washed out (purple velvet came out lilac).
+- Swept tubes (claws, horns, handles, tails) need a fixed reference vector for the ring frame, for
+  example the part's outward direction. Building the frame from `tangent x world up` flips when
+  the tangent turns vertical and leaves dark cracks where rings twist.
+- Fully metallic stylised gold goes copper-orange under the review world. For a flat-colour
+  stylised look use metallic about 0.5 and roughness about 0.35, then check at gameplay size.
+- Small lumpy parts sitting on a curved surface (a nugget on a dome) float once noise is applied:
+  sink them into the surface by about a third of their radius and recheck the round-trip height,
+  since the top of that part is often the asset's highest point.
+- The top of a turnaround's topmost part sets the delivered height: after moving it, rerun
+  `roundtrip.py --expect-height` (a 0.03 m drop on a 0.34 m crown failed the 1 percent check).

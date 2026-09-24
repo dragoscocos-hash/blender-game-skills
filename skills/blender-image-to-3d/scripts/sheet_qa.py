@@ -230,8 +230,18 @@ def main():
             crop = rgba.crop((x0, y0, x1, y1))
             path = os.path.join(a.out, f"{v}.png")
             crop.save(path)
+            # axis: centre of the subject's base (rows 2-8% of height above the ground), not the
+            # bbox centre, which a part sticking out one side (an emblem, a nose, a handle) drags off
+            cs = []
+            for yy in range(max(0, ground - int(sub_h * 0.08)), ground - int(sub_h * 0.02)):
+                if np is not None:
+                    xs = np.where(m[yy, p["x0"]:p["x1"]])[0]
+                    if len(xs):
+                        cs.append((xs[0] + xs[-1]) / 2 + p["x0"])
+            base_axis = sorted(cs)[len(cs) // 2] if cs else (p["x0"] + p["x1"]) / 2
             info = {"file": path, "size": list(crop.size), "ground_row": ground - y0,
-                    "axis_col": round((p["x0"] + p["x1"]) / 2 - x0, 1)}
+                    "axis_col": round(base_axis - x0, 1),
+                    "bbox_axis_col": round((p["x0"] + p["x1"]) / 2 - x0, 1)}
             if a.height > 0:
                 info["m_per_px"] = round(a.height / sub_h, 7)
             report["crops"][v] = info
