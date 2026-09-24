@@ -78,8 +78,9 @@ before long renders and bakes.
    sheet and the numbers. Look at the images; the numbers catch drift the eye forgives.
    compose_review aligns the two silhouettes by their bounding boxes, so it cannot see a model
    that is too short or off its axis. For orthographic sheets, also run `world_gate.py` on
-   cleaned reference mattes (labels, rulers, floor lines and anything the model does not include
-   erased) and hold that number to the phase tolerance. When the reference's own views disagree
+   cleaned reference mattes (crops from `sheet_qa.py` already are, with axis, ground row and
+   scale in `00_sheet_qa.json`; otherwise erase labels, rulers, floor lines and anything the
+   model does not include) and hold that number to the phase tolerance. When the reference's own views disagree
    (a cape wider in the front view than in the back view), record the conflict and the per-view
    ceiling as a deviation instead of chasing both.
 3. Write the mismatches as measurements, not adjectives: "head 12 percent too tall", "wheelbase
@@ -244,6 +245,13 @@ Characters: `references/categories.md` section 2 covers faces fitted to calibrat
 hands, the neck join, armour fitted to the garment underneath, and strand hair colliders and
 shading. Review close-ups of the neck, hands and every armour overlap from several angles with
 everything the viewport shows; check clearances with mesh overlap tests.
+
+Stylised flat-colour props (the usual Roblox, Astrocade and casual web look): skip HIGH and the
+normal bake. Build the forms directly as the LOW delivery meshes, one flat material per role, and
+in Phase 5 bake only the colours into one small atlas per MeshPart (512 is plenty for a hand-held
+prop). The worked example in `examples/PR_CrownMoleKing/` does exactly this, sheet to Roblox GLB,
+and its three build scripts are the fastest starting point for any similar prop: copy them, change
+the constants, keep the structure.
 
 Gate: clay from the reference camera and all fixed views, forms tolerance, plus a `--turntable 8`
 clay pass. The silhouette at gameplay size must still match Phase 2; if forms shifted it, fix the
@@ -415,3 +423,6 @@ Do not describe the asset as matching the reference where a measurement says oth
 - Never spend credits: paid generators are run by the user from prompts the agent writes.
 - No usable orthographic reference, no modelling: write the sheet prompt first and wait for the
   sheet.
+- When a sheet's own views disagree and every fix for one view breaks another, keep the views that
+  agree inside tolerance, record the other as a deviation with its numbers, and move on; show the
+  user rather than looping.

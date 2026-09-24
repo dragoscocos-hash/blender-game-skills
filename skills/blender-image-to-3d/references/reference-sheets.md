@@ -151,6 +151,14 @@ front width and the side depth, so it may be shorter or taller than the elevatio
 writes `ref/<view>.png` crops that share one scale and ground line.
 Add `--expect-ratio side:front=0.62` style checks when the brief knows a proportion.
 
+Each crop's `axis_col` is the centre of the subject's base (2 to 8% of the height above the
+ground), not the centre of its bounding box: a part that sticks out on one side (a medallion on a
+crown seen from the side, a nose, a handle) drags the box centre off the real axis and shows up
+in `world_gate.py` as a model shifted sideways. Pass `axis_col`, `ground_row` and `m_per_px` from
+`00_sheet_qa.json` straight to `world_gate.py`; `bbox_axis_col` is kept for comparison only. For
+a subject whose base is not centred on its axis (a leaning tower, a character mid-stride), set the
+axis by hand and say why in the brief.
+
 Checks and the regeneration line to append when one fails:
 
 | Check | FAIL when | Append to the prompt |
