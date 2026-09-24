@@ -1,6 +1,6 @@
 ---
 name: blender-image-to-3d
-description: Build a game-ready 3D asset in Blender from reference images (concept art, photos, turnarounds, sketches, screenshots) for any category, including characters, creatures, architecture, vehicles, props, weapons and environment pieces, through gated phases with rendered evidence compared against the reference. Use this whenever a user supplies or mentions a reference image and wants a 3D model or game asset made from it (modelled, blocked out, sculpted, retopologised, textured, rigged, animated or exported for a game engine), even when Blender is not named. Includes bpy scripts for scene calibration, review renders matched to the reference camera, silhouette measurement, validation, baking, GLB/FBX export with manifests, and clean reimport.
+description: Build a game-ready 3D asset in Blender from reference images (concept art, photos, turnarounds, sketches, screenshots) for any category, including characters, creatures, architecture, vehicles, props, weapons and environment pieces, through gated phases with rendered evidence compared against the reference. Use this whenever a user supplies or mentions a reference image and wants a 3D model or game asset made from it (modelled, blocked out, sculpted, retopologised, textured, rigged, animated or exported for a game engine), even when Blender is not named. Also use for any 3D asset headed to Roblox (in-game MeshParts, UGC accessories, layered clothing, avatar bodies, Creator Store kits), Spawn (spawn.co), CrazyGames, Astrocade, Unity, Unreal, Godot or three.js, including "make a prop for my game", "UGC item", "sell on the Roblox marketplace", "GLB for my CrazyGames game", "model for Spawn", or one asset exported to several platforms. Includes bpy scripts for scene calibration, review renders matched to the reference camera, silhouette measurement, validation, baking, GLB/FBX export with manifests, clean reimport, per-platform limit checks and web compression.
 license: MIT
 ---
 
@@ -19,7 +19,19 @@ as inferred. Say so when a single image forces inference; do not present a guess
 
 ## Runtime
 
+- Bundle check first. This file needs its `scripts/`, `references/` and `assets/` folders. If they
+  are not next to this SKILL.md (the skill was installed as instructions only), fetch the bundle
+  and use that folder as the skill directory for every path below:
+  `git clone --depth 1 https://github.com/dragoscocos-hash/blender-game-skills.git /tmp/bgs &&
+  export SKILL=/tmp/bgs/skills/blender-image-to-3d`. The fork adds the platform profiles, the
+  platform checker and the web optimizer to the upstream MIT skill by Majid Manzarpour.
+
 - Blender 4.2 or newer (used through 5.2), run headless: `blender --background --python <script> -- <args>`.
+  No Blender app (a cloud container): `python3 -m pip install bpy` (5.0.x wheel for Python 3.11)
+  and run every script through `python3 scripts/run_bpy.py <script> <args>`; wherever this file
+  says `$BLENDER_BIN --background --python X --`, read `python3 scripts/run_bpy.py X`. Workbench
+  may lack a GL context there; pass `--engine cycles` to review_render.py (CPU, about 10 s per
+  view at review size).
   Blender 5.x changed several APIs these builds touch; `references/blender-5-notes.md` lists them
   with runtime, baking and review lessons.
   Resolve the binary once: `$BLENDER_BIN`, then `blender` on PATH, then
@@ -45,8 +57,12 @@ as inferred. Say so when a single image forces inference; do not present a guess
 | `scripts/bake_maps.py` | normal and AO from HIGH to LOW, base colour, roughness, metallic; rebuilds delivery materials |
 | `scripts/export_delivery.py` | GLB/FBX export with asset-manifest.json and animation-contract.json |
 | `scripts/roundtrip.py` | imports the export into a blank Blender, reports what arrived, renders a check |
+| `scripts/check_platform.py` | plain Python: checks a GLB against a platform profile (tris per mesh/part, texture size, skin, R15 names, cages, bytes, compression); exit 1 on FAIL |
+| `scripts/optimize_web.sh` | gltf-transform meshopt + WebP/KTX2 + texture resize for web profiles; `--rigged` keeps nodes and materials |
+| `scripts/run_bpy.py` | runs any Blender script above with the `bpy` module when no Blender binary exists |
 
-Read `references/categories.md` for the asset's category before Phase 0. Read
+Read `references/categories.md` for the asset's category and `references/platform-targets.md`
+for the target platform before Phase 0. Read
 `references/rigging-animation.md` before Phase 6 and `references/delivery-and-acceptance.md`
 before Phases 1, 5 and 9. Read `references/blender-5-notes.md` when a script fails on a 5.x API or
 before long renders and bakes.
@@ -94,13 +110,28 @@ SILHOUETTE the 3 to 5 features that make it read at gameplay size
 MATERIALS  per part: role (skin, scales, worn leather, painted metal, carved stone, glass), colour, roughness range, wear pattern
 ARTICULATION rig family, joints or pivots, sockets needed, animation needs (none / idle only / full library)
 INFERRED   every side, dimension or part the images do not show and the prior used to fill it
-TARGET     engine, export format, budget tier from the table, game camera (elevation, distance, lens), subject height in pixels at typical gameplay distance
+TARGET     one line per platform profile from references/platform-targets.md (roblox-prop, roblox-rig, roblox-accessory, roblox-layered, roblox-body, spawn, crazygames, astrocade, unity, unreal, godot, threejs): format, LOD0 tri budget, max texture, byte budget for web, rig map, game camera (elevation, distance, lens), subject height in pixels at typical gameplay distance
+POLICY     for anything sold or published: originality (no franchise names, marks, characters or signature designs), the platform's content rules that apply (Roblox body modesty and proportion rules, one item per accessory, no gore), any generator used and the disclosure it needs; state PASS or the change needed before modelling
 ```
 
-Ask the user only for what the images cannot tell: target engine and format, real size when no
+Platform comes first because it changes the whole build: a Roblox accessory is 4,000 triangles
+at 2048, a Roblox avatar body is 15 named parts on an exact skeleton, a CrazyGames hero is
+budgeted in megabytes, and a Spawn humanoid needs Mixamo-style bone names for IK. If the user
+names several platforms, list each profile; build one master for all of them (section 10 of
+the platform file). If a reference would fail a platform policy gate (for example an armoured
+female body with exaggerated proportions sold as one Roblox bundle), say so now and propose the
+compliant split before any modelling; finding out at upload costs fees that are not refunded.
+
+Paid generators (Hyper3D Rodin, Hunyuan3D, FAL, anything that spends credits) are never called
+by the agent. When a generated blockout would help, write the prompt and the reference crop,
+hand them to the user to run, and import the file they return into HIGH as a starting mass. It
+still goes through every gate.
+
+Ask the user only for what the images cannot tell: target platform (or engine and format), real size when no
 scale cue exists, budget tier, whether rigging and animation are needed, the game camera. Offer
 these defaults and proceed with them when the user says to just go: 1 unit = 1 m, Z up in
-Blender with the subject facing -Y, GLB export, standard tier from the budgets table, a
+Blender with the subject facing -Y, GLB export, the named platform's profile (standard tier from
+the budgets table when no platform is named), a
 three-quarter overhead camera at 50 mm, 128 px subject height, rig only if the category deforms,
 no animation unless asked.
 
@@ -221,6 +252,12 @@ overlapping interior shells. Open boundaries are fine on cloth sheets, hair card
 collision proxies must be closed. Build LOD1 and LOD2 now with `lod_copy` and fix their outlines
 by hand, keeping head, shoulder, weapon, wheel and doorway silhouettes.
 
+Budget: the smallest LOD0 among the brief's TARGET profiles is the hard ceiling for that
+profile's export; build LOD0 for the most generous target and `lod_copy` down for the others
+(Roblox accessories, bodies and Astrocade usually land on what the generic tier calls LOD1 or
+LOD2). Roblox bodies are budgeted per part (head, torso, each arm, each leg), so keep the 15
+parts as separate LOW objects named `<Part>_Geo` from this phase on.
+
 Gate: `validate.py` with the budget tier's tri count (exit 0, warnings explained), wire mode
 render of LOW, and a clay compare against Phase 3 renders showing no silhouette loss.
 
@@ -261,7 +298,13 @@ in the normal-mapped turntable.
 
 ## Phase 6: articulation
 
-Skip only for static props and kit pieces without moving parts. Otherwise `build/06_rig.py`:
+Skip only for static props and kit pieces without moving parts. Platform rig rules first:
+Roblox bodies and layered clothing need the exact R15 hierarchy (build with the R15 family, or
+deliver an unrigged A/T-pose mesh to Studio's Avatar Setup); Spawn humanoids need Mixamo-style
+names; both are produced from the DEF- master through the maps in
+`references/platform-targets.md` section 9. Rigid mechanisms for Roblox (blades, trapdoors, lids)
+are usually better as separate parts with pivots driven by constraints in code than as skins.
+Otherwise `build/06_rig.py`:
 deformation skeleton in RIG_DEF from the rig family in `references/rigging-animation.md`,
 controls in RIG_CTRL, real pivots for every hinge, wheel, door and turret, sockets in SOCKETS
 with the axis convention (+Y forward of the attachment, +Z up). Bind every deforming piece to the
@@ -304,10 +347,31 @@ $BLENDER_BIN --background --python scripts/roundtrip.py -- --file CH_Knight/expo
   --out CH_Knight/review/09_roundtrip --expect-height 1.85
 ```
 
+Per platform: export each TARGET profile to `exports/<profile>/` from its own delivery copy
+(LOD, texture size, bone map, axis and unit factor from the platform file), pass `--engine
+<profile>` so the manifest records it, then:
+
+```bash
+bash scripts/optimize_web.sh exports/crazygames/CH_Knight.glb exports/crazygames/CH_Knight.opt.glb crazygames --rigged   # web profiles only
+python3 scripts/check_platform.py exports/crazygames/CH_Knight.opt.glb --profile crazygames --json review/09_crazygames.json
+python3 scripts/check_platform.py exports/roblox-rig/CH_Knight.glb --profile roblox-rig --json review/09_roblox.json
+```
+
+Blender cannot import meshopt files, so run `roundtrip.py` on the uncompressed export and check the
+compressed copy with `npx -y @gltf-transform/cli@4 validate <file>` plus `check_platform.py`.
+Roblox exports stay uncompressed (the importer recompresses; check_platform fails on meshopt or
+Draco in a Roblox profile). FBX deliveries: check a GLB exported with the same settings.
+
 Gate: roundtrip exit 0 (tri counts per LOD, bone names, clip lengths, images all match the
-manifest; height within 1 percent; nothing below the ground plane), and the roundtrip clay render
-matches the Phase 3 clay render. Then import into a clean project of the target engine if one is
-available and play every clip with the real weapon or garment combination.
+manifest; height within 1 percent; nothing below the ground plane), `check_platform.py` exit 0
+for every profile, and the roundtrip clay render matches the Phase 3 clay render. Then import into a clean project of the target engine if one is
+available and play every clip with the real weapon or garment combination. Handover to the
+platform's own build skill when one exists: Roblox Studio work goes to `roblox-game-creation`
+(upload via the Roblox Blender plugin or the 3D Importer, then place and verify by code),
+Spawn to `spawn-build` (asset PUT, `model.forward`, clip and socket names), CrazyGames to
+`game-foundation` / `crazygames-port` (bundle byte budget), Astrocade to `astrocade-3d-build`
+(GLTFLoader in the paste file). Give that skill the file paths, node, socket, material and clip
+names, the unit factor and the axis decision.
 
 ## Phase 10: acceptance and handover
 
@@ -315,7 +379,9 @@ Run the checklist in `references/delivery-and-acceptance.md` section 4. Produce
 `review/final/`: the compare sheets from the reference camera and fixed views, the gameplay-size
 greyscale strip, the material turntable, the extreme-pose sheet, validate.json and roundtrip.json.
 Report to the user in this order: what matches, the measured deviations that remain, everything
-inferred without reference coverage, budgets used versus the tier, and the exact files delivered.
+inferred without reference coverage, budgets used versus each platform profile, the exact files
+delivered per platform, and for anything to be sold the remaining upload costs and policy risks
+from the platform file.
 Do not describe the asset as matching the reference where a measurement says otherwise.
 
 ## Working rules
@@ -328,3 +394,8 @@ Do not describe the asset as matching the reference where a measurement says oth
 - Keep the master non-destructive; apply modifiers on the delivery copy.
 - Never rename an export to satisfy a loader that expects a different skeleton; provide a mapping.
 - Say what was not visible in the reference. A guessed back is a guess in the manifest.
+- The platform limit is a wall, the budget tier is a suggestion; check every export with
+  `check_platform.py`, never by reading the Blender stats.
+- Original designs only for anything published or sold: borrow a genre, never a franchise's names,
+  marks, characters or signature looks.
+- Never spend credits: paid generators are run by the user from prompts the agent writes.

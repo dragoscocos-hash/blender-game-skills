@@ -62,3 +62,17 @@ user's viewport disagree.
 - When a colour looks wrong, test hypotheses one at a time on a small render border (lighting,
   reflections, clipping, the shader itself) and give each object a flat emission debug colour to
   find which object is at fault before changing materials.
+
+## Lessons from the platform eval runs (Blender 5.0.1, bpy module, 2026-09-24)
+
+- `smart_project` with sharp-edge seams can shatter a bevelled hard-surface part into hundreds of
+  UV islands; turn the sharp-seam option off for props and check island count in validate.json.
+- Baking base colour from fully metallic surfaces returns black (no diffuse). Bake colour from a
+  copy with Metallic set to 0, then bake metallic separately.
+- `review_render.py --action` does not see clips that live only on muted NLA tracks; render poses
+  from a copy with the action assigned directly.
+- `roundtrip.py` measures height in whichever clip the importer leaves active; for files with
+  clips, read height from the rest pose (or export a clip-free copy for the height check).
+- Blender cannot import EXT_meshopt_compression GLBs; validate compressed files with gltf-transform.
+- AO baked from HIGH to LOW where the two meshes coincide exactly comes out black; for props with
+  no separate HIGH detail, skip the AO bake or bake AO from the LOW mesh onto itself.
